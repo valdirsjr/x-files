@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ARQUIVO X — Mapa das Teorias da Conspiração</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<style>
+:root{
+  --bg:#07090a;--card:#101518;--border:#1a2530;
+  --accent:#00e5ff;--accent2:#ff3a3a;--accent3:#ffaa00;
+  --text:#b8ccd8;--muted:#3a5060;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.01) 2px,rgba(0,229,255,.01) 4px);pointer-events:none;z-index:9000}
+#bar{height:42px;background:#050709;border-bottom:1px solid var(--border);display:flex;align-items:center;position:relative;z-index:100;flex-shrink:0}
+#logo{padding:0 18px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:4px;color:var(--accent);border-right:1px solid var(--border);height:100%;display:flex;align-items:center;white-space:nowrap}
+#logo em{color:var(--accent2);font-style:normal}
+.tab{padding:0 15px;height:100%;display:flex;align-items:center;gap:6px;cursor:pointer;font-size:10px;letter-spacing:2px;color:var(--muted);border-right:1px solid var(--border);transition:all .2s;border-bottom:2px solid transparent;white-space:nowrap}
+.tab:hover{color:var(--text);background:rgba(0,229,255,.03)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,229,255,.04)}
+.tdot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.6}
+#sbar{margin-left:auto;padding:0 14px;font-size:10px;color:var(--muted);display:flex;gap:16px;align-items:center;flex-shrink:0}
+.sv{color:var(--accent);font-weight:700}
+#clk{color:var(--accent3)}
+#app{position:absolute;inset:42px 0 0}
+.view{position:absolute;inset:0;display:none}
+.view.on{display:block}
+
+/* NETWORK */
+#vnet{overflow:hidden;cursor:grab;background:var(--bg)}
+#vnet:active{cursor:grabbing}
+#nc{position:absolute;inset:0;pointer-events:none}
+#nl{position:absolute;inset:0}
+.nn{position:absolute;cursor:pointer;transition:transform .1s}
+.nn:hover{transform:scale(1.09);z-index:500!important}
+.ncard{border:1px solid;padding:6px 10px;min-width:105px;max-width:145px;text-align:center;background:var(--card);position:relative}
+.npin{width:7px;height:7px;border-radius:50%;position:absolute;top:-4px;left:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.5)}
+.ntit{font-family:'Oswald',sans-serif;font-size:11px;font-weight:600;letter-spacing:.5px;margin-bottom:1px}
+.nsub{font-size:9px;opacity:.6;line-height:1.3}
+#ntb{position:absolute;top:10px;left:10px;z-index:50;display:flex;flex-direction:column;gap:6px}
+#nsrch{background:#0c1014;border:1px solid var(--border);color:var(--text);padding:6px 11px;font-family:'Share Tech Mono',monospace;font-size:11px;width:210px;outline:none;letter-spacing:1px}
+#nsrch:focus{border-color:var(--accent)}
+#nsrch::placeholder{color:var(--muted)}
+.frow{display:flex;flex-wrap:wrap;gap:3px;max-width:320px}
+.fbt{font-size:8px;padding:2px 7px;border:1px solid;cursor:pointer;letter-spacing:1px;opacity:.35;background:transparent;transition:all .15s;font-family:'Share Tech Mono',monospace}
+.fbt.on{opacity:1}
+#nzm{position:absolute;top:10px;right:10px;z-index:50;display:flex;flex-direction:column;gap:3px}
+.zbtn{background:#0c1014;border:1px solid var(--border);color:var(--text);width:30px;height:30px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'Share Tech Mono',monospace}
+.zbtn:hover{border-color:var(--accent);color:var(--accent)}
+#nleg{position:absolute;bottom:10px;left:10px;background:rgba(7,9,10,.92);border:1px solid var(--border);padding:8px 12px;z-index:50;font-size:9px;max-height:42vh;overflow-y:auto}
+.li{display:flex;align-items:center;gap:5px;margin-bottom:3px;color:var(--muted)}
+.ld{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* DETAIL PANEL */
+#dp{position:absolute;right:0;top:0;bottom:0;width:315px;background:#080c10;border-left:1px solid var(--border);transform:translateX(100%);transition:transform .25s;overflow-y:auto;z-index:60;display:flex;flex-direction:column}
+#dp.on{transform:translateX(0)}
+#dph{padding:14px;border-bottom:1px solid var(--border);position:relative}
+#dp-badge{font-size:8px;letter-spacing:2px;margin-bottom:6px;display:inline-block;padding:2px 7px;border:1px solid}
+#dp-title{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;margin-bottom:2px;padding-right:28px}
+#dp-aka{font-size:9px;color:var(--muted)}
+#dp-x{position:absolute;top:10px;right:10px;background:none;border:1px solid var(--border);color:var(--muted);width:22px;height:22px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+#dp-x:hover{border-color:var(--accent2);color:var(--accent2)}
+#dp-meta{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.dmi{background:var(--card);padding:7px;border:1px solid var(--border)}
+.dml{font-size:8px;color:var(--muted);letter-spacing:1px;margin-bottom:2px}
+.dmv{font-size:11px;color:var(--text)}
+#dp-desc{padding:12px 14px;font-size:11px;line-height:1.8;color:#7a9aaa;border-bottom:1px solid var(--border)}
+#dp-ppl,#dp-lnk{padding:10px 14px;border-bottom:1px solid var(--border)}
+.dsec{font-size:8px;letter-spacing:2px;color:var(--muted);margin-bottom:6px}
+.ptag{display:inline-block;font-size:9px;padding:2px 7px;margin:2px;border:1px solid var(--border);color:var(--text)}
+.ltag{display:inline-block;font-size:9px;padding:2px 7px;margin:2px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .15s}
+.ltag:hover{border-color:var(--accent);color:var(--accent)}
+#dp-ask{margin:12px 14px;padding:9px;background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.3);color:var(--accent);font-family:'Share Tech Mono',monospace;font-size:10px;cursor:pointer;letter-spacing:1px;width:calc(100% - 28px);transition:all .15s}
+#dp-ask:hover{background:rgba(0,229,255,.1)}
+
+/* TIMELINE */
+#vtl{overflow-y:auto;padding:28px 36px}
+#tl-hd{text-align:center;margin-bottom:28px}
+#tl-hd h2{font-family:'Oswald',sans-serif;font-size:24px;letter-spacing:4px;color:var(--accent);margin-bottom:4px}
+#tl-hd p{font-size:10px;color:var(--muted);letter-spacing:2px}
+#tl-flt{display:flex;gap:4px;justify-content:center;margin-bottom:22px;flex-wrap:wrap}
+.tlfbt{font-size:8px;padding:3px 9px;border:1px solid;cursor:pointer;letter-spacing:1px;opacity:.35;background:transparent;font-family:'Share Tech Mono',monospace;transition:all .15s}
+.tlfbt.on{opacity:1}
+#tlbody{position:relative;max-width:860px;margin:0 auto}
+#tlbody::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--border);transform:translateX(-50%)}
+.tlera{text-align:center;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:3px;color:var(--muted);margin:22px 0 12px;position:relative}
+.tlera::before,.tlera::after{content:'';position:absolute;top:50%;width:33%;height:1px;background:var(--border)}
+.tlera::before{left:0}.tlera::after{right:0}
+.tli{display:flex;gap:18px;margin-bottom:14px;align-items:flex-start;position:relative}
+.tli.L{flex-direction:row-reverse}
+.tli.L .tlcard{text-align:right}
+.tldot{position:absolute;left:50%;top:14px;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;border:1px solid;z-index:2}
+.tlhalf{flex:1}
+.tlcard{background:var(--card);border:1px solid var(--border);padding:10px 12px;cursor:pointer;transition:all .2s}
+.tlcard:hover{background:#111c24}
+.tlyr{font-family:'Oswald',sans-serif;font-size:18px;font-weight:700;line-height:1}
+.tlnm{font-size:11px;font-weight:600;margin:3px 0 2px;letter-spacing:.5px}
+.tlloc{font-size:9px;color:var(--muted)}
+.tlsnip{font-size:9px;color:#5a7a8a;margin-top:5px;line-height:1.5}
+
+/* WORLD MAP */
+#vwm{overflow:hidden;position:relative;background:#060a0c;width:100%;height:100%}
+#wmap{display:block;position:absolute;top:0;left:0}
+.land{fill:#0d1820;stroke:#1a2f40;stroke-width:.4}
+.graticule{fill:none;stroke:#0d1820;stroke-width:.4}
+#wmleg{position:absolute;bottom:10px;left:10px;background:rgba(6,10,12,.93);border:1px solid var(--border);padding:8px 12px;font-size:9px;z-index:10;max-height:50vh;overflow-y:auto}
+#wmpanel{position:absolute;bottom:10px;right:10px;width:275px;background:rgba(6,10,12,.97);border:1px solid var(--border);padding:14px;display:none;z-index:10;position:absolute}
+#wmpanel.on{display:block}
+#wmp-title{font-family:'Oswald',sans-serif;font-size:15px;margin-bottom:4px;color:var(--accent)}
+#wmp-loc{font-size:9px;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
+#wmp-body{font-size:10px;color:#6a8a9a;line-height:1.65;white-space:pre-line}
+#wmp-more{font-size:9px;color:var(--accent);cursor:pointer;margin-top:10px;letter-spacing:1px;display:block}
+#wmp-cls{position:absolute;top:8px;right:8px;background:none;border:1px solid var(--border);color:var(--muted);width:18px;height:18px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#wmzm{position:absolute;top:10px;right:10px;z-index:10;display:flex;flex-direction:column;gap:3px}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+<div id="bar">
+  <div id="logo"><em>▲</em> ARQUIVO X — CONSPIRAÇÕES</div>
+  <div class="tab on" data-v="net"><div class="tdot"></div>REDE</div>
+  <div class="tab" data-v="tl"><div class="tdot"></div>LINHA DO TEMPO</div>
+  <div class="tab" data-v="wm"><div class="tdot"></div>MAPA-MÚNDI</div>
+  <div id="sbar">
+    TEORIAS: <span class="sv" id="sc">0</span>
+    &nbsp;|&nbsp; CONEXÕES: <span class="sv" id="slk">0</span>
+    &nbsp;|&nbsp; <span id="clk">--:--:--</span>
+  </div>
+</div>
+
+<div id="app">
+  <!-- NETWORK -->
+  <div class="view on" id="vnet">
+    <canvas id="nc"></canvas>
+    <div id="nl"></div>
+    <div id="ntb">
+      <input id="nsrch" type="text" placeholder="BUSCAR TEORIA...">
+      <div class="frow" id="frow"></div>
+    </div>
+    <div id="nzm">
+      <button class="zbtn" id="zin">+</button>
+      <button class="zbtn" id="zout">−</button>
+      <button class="zbtn" id="zfit" style="font-size:9px">FIT</button>
+    </div>
+    <div id="nleg"></div>
+    <div id="dp">
+      <button id="dp-x">×</button>
+      <div id="dph">
+        <div id="dp-badge"></div>
+        <div id="dp-title"></div>
+        <div id="dp-aka"></div>
+      </div>
+      <div id="dp-meta">
+        <div class="dmi"><div class="dml">ANO / PERÍODO</div><div class="dmv" id="dp-yr">—</div></div>
+        <div class="dmi"><div class="dml">LOCAL</div><div class="dmv" id="dp-loc">—</div></div>
+        <div class="dmi"><div class="dml">STATUS</div><div class="dmv" id="dp-cls">—</div></div>
+        <div class="dmi"><div class="dml">CRENÇA ESTIMADA</div><div class="dmv" id="dp-bel">—</div></div>
+      </div>
+      <div id="dp-desc"></div>
+      <div id="dp-ppl"><div class="dsec">FIGURAS-CHAVE</div><div id="dp-plist"></div></div>
+      <div id="dp-lnk"><div class="dsec">CONECTADA COM</div><div id="dp-llist"></div></div>
+      <button id="dp-ask">↗ APROFUNDAR NO CHAT</button>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="view" id="vtl">
+    <div id="tl-hd"><h2>LINHA DO TEMPO</h2><p>DA ANTIGUIDADE À ERA DIGITAL</p></div>
+    <div id="tl-flt"></div>
+    <div id="tlbody"></div>
+  </div>
+
+  <!-- WORLD MAP -->
+  <div class="view" id="vwm">
+    <svg id="wmap"></svg>
+    <div id="wmleg"></div>
+    <div id="wmpanel">
+      <button id="wmp-cls">×</button>
+      <div id="wmp-title"></div>
+      <div id="wmp-loc"></div>
+      <div id="wmp-body"></div>
+      <span id="wmp-more">↗ VER NA REDE</span>
+    </div>
+    <div id="wmzm">
+      <button class="zbtn" id="wmzi">+</button>
+      <button class="zbtn" id="wmzo">−</button>
+      <button class="zbtn" id="wmzr" style="font-size:9px">FIT</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════ DATA ═══════════════════════════
+const CATS={
+  org:  {l:'Organizações Secretas',  c:'#aa44ff'},
+  gov:  {l:'Governo / Estado',       c:'#ff6622'},
+  econ: {l:'Economia / Finanças',    c:'#ff6699'},
+  hist: {l:'Eventos Históricos',     c:'#ffcc00'},
+  space:{l:'Espaço / Extraterrestre',c:'#4488ff'},
+  tech: {l:'Tecnologia / Mídia',     c:'#00ccff'},
+  med:  {l:'Saúde / Medicina',       c:'#88ff00'},
+  relig:{l:'Religião / Ocultismo',   c:'#ff2277'},
+  sci:  {l:'Ciência Alternativa',    c:'#00ffcc'},
+  real: {l:'Realidade / Simulação',  c:'#ff88ff'},
+  eco:  {l:'Meio Ambiente / Extinção',c:'#aaff44'},
+  corp: {l:'Controle Corporativo',   c:'#ffaa00'},
+  ocean:{l:'ETs / Subaquático',      c:'#0088ff'},
+  apc:  {l:'Anticristo / Profecia',  c:'#ff0000'},
+  cosm: {l:'Cosmologia / ETs & Religião', c:'#cc88ff'},
+};
+
+const N=[
+  // REALIDADE / SIMULAÇÃO
+  {id:'simul',x:540,y:60,cat:'real',title:'Vivemos numa Simulação',aka:'Simulation Hypothesis',year:'2003',loc:'Global / Filosofia',lat:40,lng:-74,belief:'~20% de cientistas consideram plausível',cls:'Filosófica / Científica',people:['Nick Bostrom','Elon Musk','Neil deGrasse Tyson','Rizwan Virk'],desc:'Nick Bostrom propôs em 2003: se civilizações avançadas criam simulações conscientes em escala, então estatisticamente quase certamente vivemos dentro de uma. Elon Musk disse que a chance de vivermos na "realidade base" é de "um em bilhões". Físico James Gates encontrou código de correção de erros nas equações da supersimetria.',links:['matrix','mandela','holografico','quantica','cern']},
+  {id:'matrix',x:660,y:50,cat:'real',title:'Teoria do Matrix',aka:'Realidade como programa',year:'1999',loc:'Global',lat:41,lng:-74,belief:'~15%',cls:'Cultural / Filosófica',people:['Jean Baudrillard','Philip K. Dick','Elon Musk'],desc:'Baudrillard em "O Simulacro e a Simulação" (1981) argumentou que a hiper-realidade substituiu o real. Philip K. Dick afirmou em 1977 que nossa realidade era uma "hologravação" e que experienciou um "vazamento" de outra realidade. A constante de estrutura fina (1/137) é citada por físicos como parâmetro suspeitamente preciso.',links:['simul','holografico','mandela']},
+  {id:'holografico',x:760,y:70,cat:'real',title:'Universo Holográfico',aka:'Princípio Holográfico',year:'1990s',loc:'Global',lat:37,lng:-122,belief:'Teoria física real (Susskind, Hawking)',cls:'Científica / Filosófica',people:['Leonard Susskind','Stephen Hawking','Juan Maldacena','Michael Talbot'],desc:'O Princípio Holográfico (física real) afirma que toda informação do universo 3D pode ser codificada numa superfície 2D. David Bohm chamou de "ordem implicada". A teoria da conspiração expande: a realidade é uma projeção controlada por entidades externas. O experimento do duplo fenda — onde observar muda o resultado — é citado como evidência.',links:['simul','matrix','quantica']},
+  {id:'quantica',x:880,y:60,cat:'real',title:'Consciência Quântica',aka:'A mente cria a realidade',year:'1980s',loc:'Global',lat:51,lng:0,belief:'~25%',cls:'Científica alternativa',people:['Amit Goswami','Roger Penrose','Stuart Hameroff','Dean Radin'],desc:'O colapso da função de onda exige um "observador". Alguns físicos concluem: a consciência cria a realidade. Penrose-Hameroff propõem microtúbulos neuronais como computadores quânticos (OrchOR). A teoria conspiracionista: isso é suprimido pois destruiria o materialismo científico que mantém o controle ideológico.',links:['simul','holografico','mandela']},
+  {id:'mandela',x:760,y:180,cat:'real',title:'Efeito Mandela',aka:'Memórias de realidades paralelas',year:'2009',loc:'Global (internet)',lat:41,lng:-74,belief:'~35%',cls:'Paranormal / Quântica',people:['Fiona Broome','Cynthia Sue Larson'],desc:'Memórias coletivas de eventos que "nunca aconteceram": Mandela morreu na prisão nos 80 (não em 2013), Monopoly sem monóculo, "Looney Tunes" não "Toons". Teoria: resultam de deslocamentos entre universos paralelos do multiverso, ou manipulações da linha do tempo pelo CERN ao colidir partículas.',links:['simul','cern','matrix']},
+  {id:'cern',x:900,y:180,cat:'sci',title:'CERN e Portais Dimensionais',aka:'LHC invocando entidades',year:'2008',loc:'Genebra, Suíça',lat:46,lng:6,belief:'~18%',cls:'Científica alternativa',people:['Sergio Bertolucci','Giorgio Tsoukalos'],desc:'O LHC do CERN estaria abrindo portais dimensionais, causando o Efeito Mandela ou invocando entidades de outras dimensões. A estátua de Shiva (deus da destruição) na entrada do CERN é citada como agenda oculta. A cerimônia do túnel de Gotthard (2016) com rituais aparentes viralizou como "prova".',links:['mandela','simul','antigravidade']},
+
+  // ENERGIA LIVRE
+  {id:'freeenergy',x:80,y:80,cat:'sci',title:'Energia Livre / Infinita',aka:'Supressão da energia gratuita',year:'1900s',loc:'Global',lat:41,lng:-74,belief:'~30%',cls:'Científica alternativa',people:['Nikola Tesla','Wilhelm Reich','Stanley Meyer','John Hutchison'],desc:'Tecnologias de energia gratuita foram inventadas mas suprimidas por petrolíferas e governos. Stanley Meyer criou carro movido a água pura (eletrólise avançada); morreu em 1998 de aneurisma após reunião com investidores — teoria: envenenado. Tesla teria descoberto ressonância com a ionosfera para energia sem fio global gratuita.',links:['tesla','petrodolar','rothschild','antigravidade']},
+  {id:'tesla',x:60,y:200,cat:'sci',title:'Supressão de Tesla',aka:'Wardenclyffe e J.P. Morgan',year:'1901–1943',loc:'Nova York, EUA',lat:41,lng:-74,belief:'~40%',cls:'Histórica / Científica',people:['Nikola Tesla','J.P. Morgan','Thomas Edison'],desc:'Tesla desenvolveu a torre Wardenclyffe para transmissão de energia sem fio — gratuita. Morgan cortou o financiamento quando percebeu que não haveria como cobrar. Após a morte de Tesla (1943), o FBI confiscou todos os documentos. Alguns arquivos permaneceram classificados por décadas. Sem seu trabalho, AC e rádio teriam chegado décadas mais tarde.',links:['freeenergy','antigravidade','petrodolar']},
+  {id:'antigravidade',x:120,y:320,cat:'sci',title:'Tecnologia Antigravidade',aka:'Die Glocke e propulsão zero-ponto',year:'1940s',loc:'Alemanha / EUA',lat:51,lng:10,belief:'~20%',cls:'Científica alternativa',people:['Viktor Schauberger','T. Townsend Brown','Bob Lazar','Igor Witkowski'],desc:'A Alemanha nazista desenvolveu Die Glocke (A Sino) — propulsão baseada em mercúrio giratório em campo magnético extremo. Transferida para os EUA via Operação Paperclip. Bob Lazar afirma ter retroengenheirado naves na Área S-4 usando propulsão gravitacional com Elemento 115 (Moscóvio — descoberto em 2003).',links:['freeenergy','tesla','area51','paperclip']},
+  {id:'paperclip',x:200,y:200,cat:'hist',title:'Operação Paperclip',aka:'Nazistas na NASA e CIA',year:'1945–1955',loc:'EUA / Alemanha',lat:39,lng:-77,belief:'Fato histórico real',cls:'Real / Desclassificado',people:['Wernher von Braun','Walter Dornberger','Allen Dulles'],desc:'REAL: o governo americano trouxe secretamente 1.600+ cientistas nazistas. Wernher von Braun (ex-SS) tornou-se diretor da NASA. A CIA recrutou ex-oficiais da Gestapo e SS para o programa de contra-inteligência. A teoria ampliada: tecnologias alienígenas capturadas pelos nazistas foram também transferidas para programas secretos americanos.',links:['antigravidade','nasa','cia']},
+
+  // CONTROLE CORPORATIVO
+  {id:'corpcontrol',x:320,y:60,cat:'corp',title:'Controle Corporativo Global',aka:'BlackRock, Vanguard e State Street',year:'1970s',loc:'Global',lat:40,lng:-74,belief:'~45%',cls:'Econômica / Política',people:['Larry Fink (BlackRock)','Klaus Schwab','Jamie Dimon'],desc:'Três gestoras de ativos — BlackRock (~$10 tri), Vanguard (~$8 tri), State Street (~$4 tri) — são as maiores acionistas de praticamente todas as grandes corporações do mundo simultaneamente. São donas da Coca-Cola, Apple, Boeing, CNN, Fox News, e concorrentes entre si — ao mesmo tempo. Isso cria um capitalismo de "sócio único" que coordena política empresarial global acima dos governos.',links:['nwo','rothschild','bildeberg','davos','blackrock']},
+  {id:'blackrock',x:440,y:60,cat:'corp',title:'BlackRock — Governo Sombra',aka:'O banco que governa o mundo',year:'2008',loc:'Nova York, EUA',lat:41,lng:-74,belief:'~25%',cls:'Econômica',people:['Larry Fink','Jeb Bush','Mike Pence','Janet Yellen'],desc:'O Fed americano usou a BlackRock para gerenciar os programas de socorro do COVID — um banco privado administrando dinheiro público. Ex-funcionários do BlackRock ocupam cargos no governo em ambos os partidos (revolving door). A teoria: BlackRock é o braço financeiro de um governo oculto global que opera acima das democracias eleitas.',links:['corpcontrol','fed','rothschild','davos']},
+  {id:'davos',x:460,y:160,cat:'corp',title:'Fórum de Davos / WEF',aka:'Grande Reinício',year:'1971',loc:'Davos, Suíça',lat:46,lng:10,belief:'~35%',cls:'Geopolítica / Corporativa',people:['Klaus Schwab','Al Gore','Tony Blair','Justin Trudeau'],desc:'O WEF treinou gerações de líderes mundiais (Young Global Leaders: Macron, Trudeau, Jacinda Ardern). Klaus Schwab escreveu "The Great Reset" (2020) propondo fusão de governos e corporações. Disse: "você não terá nada e será feliz". A teoria: o COVID foi a oportunidade usada para acelerar o Grande Reinício globalmente.',links:['corpcontrol','nwo','covid','bildeberg','blackrock']},
+  {id:'fed',x:200,y:340,cat:'econ',title:'Federal Reserve',aka:'Banco Central Privado',year:'1913',loc:'Washington D.C., EUA',lat:39,lng:-77,belief:'~40%',cls:'Econômica / Histórica',people:['Paul Warburg','Nelson Aldrich','Woodrow Wilson','G. Edward Griffin'],desc:'O Fed foi criado em reunião secreta em Jekyll Island (1910) por banqueiros privados. Wilson teria dito no fim da vida: "destruí meu país, pois entreguei o controle do crédito aos banqueiros". O Fed pode criar dinheiro do nada e cobrar juros do governo americano — seus acionistas são bancos privados. Griffin escreveu "A Criatura de Jekyll Island".',links:['rothschild','nwo','corpcontrol']},
+  {id:'monsanto',x:700,y:140,cat:'corp',title:'Big Agro / Monsanto',aka:'Envenenamento alimentar',year:'1970s',loc:'St. Louis, EUA',lat:39,lng:-90,belief:'~35%',cls:'Corporativa / Médica',people:['Hugh Grant (CEO)','Michael Taylor','Vandana Shiva'],desc:'Monsanto (agora Bayer) patenteia sementes GM tornando agricultores dependentes. Glifosato classificado como "provável carcinogênico" pela OMS. Michael Taylor trabalhou alternadamente no FDA e na Monsanto (revolving door real e documentado). Teoria: envenenamento alimentar deliberado para criar doenças e vender farmacêuticos — mesmo grupo de acionistas (BlackRock, Vanguard) das duas indústrias.',links:['corpcontrol','svalbard','depop','blackrock']},
+
+  // GOVERNO ÚNICO
+  {id:'nwo',x:280,y:280,cat:'org',title:'Nova Ordem Mundial',aka:'Governo único global',year:'1990s',loc:'Global',lat:40,lng:-10,belief:'~28% globalmente',cls:'Geopolítica',people:['George H.W. Bush','Henry Kissinger','George Soros','David Rockefeller'],desc:'Bush usou o termo literalmente em discurso de setembro de 1990. A teoria: elite global planeja dissolver nações soberanas e criar governo único usando crises como ferramenta (problema-reação-solução). Eurodivisa, ONU reformada, FMI como banco central global, exército da ONU e passaporte digital universal seriam as instituições desse governo.',links:['illuminati','bildeberg','onu','covid','deepstate','davos']},
+  {id:'illuminati',x:180,y:400,cat:'org',title:'Illuminati',aka:'Ordem dos Iluminados',year:'1776',loc:'Bavária, Alemanha',lat:48,lng:11,belief:'~35%',cls:'Mítica / Persistente',people:['Adam Weishaupt','Albert Pike','Mayer Rothschild'],desc:'Fundada em 1776 em Ingolstadt, banida em 1785. A teoria: sobreviveu infiltrando maçonaria, governos e bancos. As Pedras de Georgia ordenam redução da população para 500 milhões — consideradas o manifesto do NWO. Albert Pike teria escrito carta em 1871 prevendo três guerras mundiais para estabelecer o governo único.',links:['nwo','macos','jfk','rothschild','bildeberg','reptilianos','georgiastone']},
+  {id:'georgiastone',x:60,y:480,cat:'relig',title:'Pedras de Georgia',aka:'Mandamentos do NWO',year:'1980',loc:'Georgia, EUA',lat:34,lng:-83,belief:'~20%',cls:'Simbólica',people:['R.C. Christian (pseudônimo)'],desc:'Monólitos de granito erguidos em 1980 por "R.C. Christian" anônimo com instruções para humanidade pós-apocalíptica em 8 idiomas. 1º mandamento: manter humanidade abaixo de 500 milhões. Outros: língua mundial única, governo mundial. Foram parcialmente destruídos por bomba em julho de 2022 — e demolidos completamente pelo condado dias depois.',links:['illuminati','nwo','depop']},
+  {id:'depop',x:140,y:560,cat:'med',title:'Agenda de Depopulação',aka:'Redução global da população',year:'1974',loc:'Global',lat:40,lng:0,belief:'~25%',cls:'Geopolítica / Médica',people:['Henry Kissinger','Bill Gates','Ted Turner','Prince Philip'],desc:'O NSSM 200 de Kissinger (1974, REAL e desclassificado) identificou crescimento populacional em países em desenvolvimento como ameaça à segurança dos EUA e recursos naturais. Prince Philip disse que gostaria de reencarnar como vírus para reduzir a população. Ted Turner queria 2 bilhões de pessoas no planeta.',links:['georgiastone','vacinacao','gates','illuminati']},
+  {id:'onu',x:440,y:180,cat:'gov',title:'ONU — Agenda Oculta',aka:'Agenda 21 e 2030',year:'1992',loc:'Nova York, EUA',lat:41,lng:-74,belief:'~20%',cls:'Geopolítica',people:['Maurice Strong','António Guterres','Klaus Schwab'],desc:'Maurice Strong, criador da Agenda 21 (1992), disse: o capitalismo industrial deve colapsar e é responsabilidade dos intelectuais fazer isso acontecer. Cada meta de "desenvolvimento sustentável" esconderia controle de propriedade privada, mobilidade e reprodução. O passaporte de carbono seria a ferramenta final de controle.',links:['nwo','terraPlana','vacinacao','covid','davos']},
+  {id:'rothschild',x:100,y:360,cat:'econ',title:'Família Rothschild',aka:'Donos dos bancos centrais',year:'1760s',loc:'Frankfurt, Alemanha',lat:50,lng:9,belief:'~30%',cls:'Financeira',people:['Mayer Amschel Rothschild','Nathan Rothschild','Evelyn de Rothschild'],desc:'Nathan Rothschild teria sabido antes do mercado da derrota de Napoleão em Waterloo e lucrado enormemente. A família financiou ambos os lados de múltiplas guerras. Hoje controlaria 26 bancos centrais ao redor do mundo. É frequentemente instrumento de antissemitismo conspiratório — distinção importante entre a família real e a teoria.',links:['illuminati','bildeberg','nwo','petrodolar','fed']},
+  {id:'bildeberg',x:360,y:180,cat:'org',title:'Grupo Bilderberg',aka:'Reunião sem atas',year:'1954',loc:'Europa / EUA (rotativo)',lat:52,lng:5,belief:'~20%',cls:'Política secreta',people:['Denis Healey','David Rockefeller','Henry Kissinger','Peter Thiel'],desc:'Denis Healey, cofundador, disse: "Dizer que somos conspiradores é absurdo, mas tentamos chegar a um consenso." Reunião de ~130 líderes sem atas públicas. Acusado de decidir presidentes e guerras antes que aconteçam. Jornalistas são barrados. Em 2022, Zelensky participou remotamente logo antes do apoio militar ocidental explodir.',links:['illuminati','nwo','rothschild','cfe','davos']},
+  {id:'macos',x:100,y:440,cat:'org',title:'Maçonaria',aka:'Fraternidade e seus segredos',year:'1717',loc:'Londres, Reino Unido',lat:51,lng:-1,belief:'~25%',cls:'Sociedade secreta',people:['George Washington','Mozart','Churchill','Frederick o Grande'],desc:'Fraternidade fundada em 1717 com rituais secretos e 33 graus hierárquicos. 14 presidentes americanos eram maçons. Albert Pike escreveu "Morals and Dogma" — frase sobre Lúcifer tirada de contexto deu origem à teoria de que Maçonaria é luciferiana nos graus superiores. O livro existe; a interpretação é debatida.',links:['illuminati','jfk','olho','templarios']},
+  {id:'templarios',x:40,y:340,cat:'org',title:'Cavaleiros Templários',aka:'Sobreviveram e viraram Maçons',year:'1119',loc:'Jerusalém / França',lat:48,lng:2,belief:'~15%',cls:'Histórica / Mítica',people:['Jacques de Molay','Hugues de Payens','Filipe IV'],desc:'Dissolvidos em 1312 por Filipe IV, que os acusou de heresia e torturou confissões de adoração ao Baphomet. Teoria: sobreviveram como Maçons, guardam Santo Graal e Arca da Aliança. A frota templária desapareceu de La Rochelle em 1307 — alguns acreditam que chegou à América antes de Colombo.',links:['macos','illuminati','sion']},
+  {id:'sion',x:40,y:240,cat:'org',title:'Priorado de Sião',aka:'Guardiões da linhagem de Cristo',year:'1099',loc:'França',lat:46,lng:3,belief:'~10%',cls:'Fraude documental',people:['Pierre Plantard','Leonardo da Vinci','Isaac Newton'],desc:'Ordem que guardaria a linhagem sanguínea de Jesus e Maria Madalena, popularizada por "O Código Da Vinci". PROBLEMA: Pierre Plantard inventou a ordem em 1956 e depositou documentos medievais FALSOS na Biblioteca Nacional Francesa. Ele mesmo confessou à polícia em 1993. Dan Brown não verificou as fontes.',links:['templarios','illuminati']},
+  {id:'cfe',x:500,y:140,cat:'org',title:'CFR / Comissão Trilateral',aka:'Governo paralelo americano',year:'1921',loc:'Nova York, EUA',lat:41,lng:-74,belief:'~18%',cls:'Geopolítica',people:['David Rockefeller','Zbigniew Brzezinski','Henry Kissinger'],desc:'Council on Foreign Relations (1921) e Comissão Trilateral (1973). Brzezinski escreveu que a era tecnotrônica exigiria uma "elite técnocrática" para gerir o mundo. Jimmy Carter era membro da Trilateral antes de ser eleito presidente. George H.W. Bush era membro do CFR, da CIA e vice-presidente de Reagan — tudo ao mesmo tempo.',links:['bildeberg','nwo','rothschild']},
+
+  // EXTINÇÃO / MEIO AMBIENTE
+  {id:'extinção',x:920,y:340,cat:'eco',title:'Extinção Planejada',aka:'O colapso que sabem que vem',year:'2010',loc:'Global',lat:0,lng:0,belief:'~30%',cls:'Ambiental / Geopolítica',people:['Guy McPherson','Michael Ruppert','Kevin Anderson'],desc:'Governos sabem há décadas que a civilização industrial colapsará antes de 2050 mas ocultam a gravidade. Estão construindo bunkers (Denver Airport, Svalbard) e arcas genéticas enquanto o público vive normalmente. O Relatório dos Limites do Crescimento (MIT, 1972) previa colapso exatamente neste período — foi silenciado pela mídia.',links:['depop','chemtrails','haarp','svalbard','planetaX']},
+  {id:'svalbard',x:880,y:440,cat:'eco',title:'Cofre de Sementes de Svalbard',aka:'Arca de Noé global',year:'2008',loc:'Svalbard, Noruega',lat:78,lng:15,belief:'Instalação real — propósito debatido',cls:'Ambiental / Sobrevivência',people:['Cary Fowler','Bill Gates (financiador)','Monsanto'],desc:'REAL: armazena 1,3 milhão de variedades de sementes a -18°C no Ártico. Financiado por Gates, Monsanto, Syngenta. Teoria: a elite sabe que algo catastrófico está planejado — guerra biológica, colapso climático, ou asteroide — e se prepara enquanto o público é mantido ignorante e distraído.',links:['extinção','depop','gates','monsanto']},
+  {id:'haarp',x:780,y:380,cat:'tech',title:'HAARP',aka:'Controle climático como arma',year:'1993',loc:'Gakona, Alasca',lat:62,lng:-145,belief:'~15%',cls:'Tecnológica',people:['Bernard Eastlund','Jesse Ventura','Hugo Chávez'],desc:'Instalação real de pesquisa ionosférica no Alasca. Acusada de causar o tsunami do Oceano Índico (2004), terremoto do Haiti (2010), furacão Katrina e Harvey. Hugo Chávez culpou o HAARP pelo Haiti. Uma rede global incluiria China (EAST), Rússia (Sura) e Europa (EISCAT) — todos reais, mas com fins científicos declarados.',links:['911','chemtrails','nwo','extinção']},
+  {id:'chemtrails',x:880,y:300,cat:'tech',title:'Chemtrails',aka:'Pulverização química global',year:'1990s',loc:'Global',lat:45,lng:20,belief:'~17% globalmente',cls:'Ambiental',people:['Dane Wigington','G. Edward Griffin'],desc:'Rastros de condensação de aviões contendo alumínio, bário, estrôncio para geoengenharia climática, controle populacional ou implantação de nanotecnologia. Solar Radiation Management (bloquear o sol com aerossóis) é debate científico REAL. Em 2016, 76 de 77 cientistas atmosféricos disseram não ter evidência de chemtrails intencionais.',links:['haarp','vacinacao','nwo','extinção']},
+
+  // ESPAÇO / EXTRATERRESTRE
+  {id:'lua_civil',x:700,y:520,cat:'space',title:'Civilizações na Lua',aka:'Bases alienígenas lunares',year:'1969',loc:'Lua',lat:0,lng:0,belief:'~20%',cls:'Extraterrestre',people:['George Leonard','Richard Hoagland','Karl Wolfe'],desc:'Karl Wolfe, técnico da NASA com credenciais de segurança, afirmou ter visto fotos classificadas de estruturas na face oculta da Lua — cúpulas, torres, bases. George Leonard publicou "Somebody Else Is on the Moon" (1976) com análise de fotos oficiais. A real razão para não termos voltado à Lua desde 1972: ETs nos avisaram para não retornar.',links:['nasa','area51','luna','marte']},
+  {id:'marte',x:840,y:500,cat:'space',title:'Civilizações em Marte',aka:'Ruínas e humanoides marcianos',year:'1976',loc:'Marte',lat:0,lng:0,belief:'~25%',cls:'Extraterrestre',people:['Richard Hoagland','Andrew Basiago','John Brandenburg'],desc:'Fotos da Viking I (1976) mostraram a "Face de Marte" na região de Cydonia — erosão natural segundo a NASA. John Brandenburg, físico, argumenta que isótopos de Xenônio na atmosfera de Marte indicam explosão nuclear antiga — uma civilização foi destruída. Andrew Basiago afirma ter sido teletransportado a Marte pela DARPA em 1981.',links:['nasa','lua_civil','area51','et_ocean']},
+  {id:'luna',x:620,y:560,cat:'space',title:'Lua é Falsa',aka:'Apollo foi encenação',year:'1969',loc:'EUA',lat:29,lng:-81,belief:'~6% EUA / ~57% Rússia',cls:'Científica',people:['Bill Kaysing','Bart Sibrel','Stanley Kubrick (acusado)'],desc:'NASA teria encenado missões Apollo em estúdio. Refutação: retroreflectores a laser ainda funcionam (qualquer observatório pode verificar), 842 lb de rocha lunar com composição impossível de falsificar, a URSS rastreou a missão em tempo real e nunca contestou. A teoria persiste porque questiona a maior conquista americana.',links:['nasa','kubrick','terraPlana','lua_civil']},
+  {id:'nasa',x:740,y:580,cat:'space',title:'Segredos da NASA',aka:'Aliens e encobrimentos sistemáticos',year:'1969',loc:'Houston, EUA',lat:30,lng:-95,belief:'~30%',cls:'Extraterrestre',people:['Edgar Mitchell','Bob Lazar','Gary McKinnon'],desc:'Gary McKinnon hackeou sistemas da NASA (2002) e afirma ter encontrado lista de "oficiais navais não-terrestres" e fotos de naves espaciais. Edgar Mitchell (Apollo 14) disse acreditar em ET e que o governo sabia. Em 2023, ex-oficial David Grusch prestou depoimento no Congresso americano afirmando que o governo tem naves e corpos de "inteligências não-humanas".',links:['luna','terraPlana','area51','roswell','lua_civil']},
+  {id:'area51',x:840,y:600,cat:'space',title:'Área 51',aka:'Retroengenharia alienígena',year:'1947',loc:'Nevada, EUA',lat:37,lng:-115,belief:'~54%',cls:'Extraterrestre',people:['Bob Lazar','Philip Corso','Edgar Fouché'],desc:'Bob Lazar afirma ter retroengenheirado 9 naves em S-4, adjacente à Área 51, usando propulsão de onda gravitacional com Elemento 115 (Moscóvio — descoberto em 2003, REAL). Philip Corso em "O Dia Depois de Roswell" afirma que fibra óptica, kevlar, circuitos integrados e visão noturna vieram de retroengenharia alienígena.',links:['nasa','reptilianos','roswell','antigravidade']},
+  {id:'roswell',x:740,y:660,cat:'space',title:'Roswell',aka:'O disco voador de 1947',year:'1947',loc:'Novo México, EUA',lat:33,lng:-105,belief:'~45%',cls:'Extraterrestre',people:['Jesse Marcel','Mac Brazel','Stanton Friedman'],desc:'Exército anunciou "disco voador" recuperado, depois afirmou balão meteorológico. Em 1994, admitiu balão espião Projeto Mogul. Em 2023, ex-oficial da inteligência David Grusch afirmou ao Congresso que o governo americano tem naves e corpos de "inteligências não-humanas" recuperadas — e que houve cobertura ativa por décadas.',links:['area51','nasa','et_ocean']},
+  {id:'reptilianos',x:520,y:640,cat:'relig',title:'Reptilianos',aka:'Élite humano-reptiliana',year:'1990s',loc:'Global',lat:51,lng:-2,belief:'~12% nos EUA',cls:'Extraterrestre / Ocultista',people:['David Icke','Zecharia Sitchin','Cathy O\'Brien'],desc:'David Icke: raça de reptilianos da constelação Draco habita 4ª dimensão e se manifesta em corpos humanos da elite — família real britânica, Bush, Clintons, Rothschilds. Sitchin argumentou que os Anunnaki sumérios eram aliens que criaram humanos como escravos mineradores de ouro. Sangue real = linhagem reptiliana Anunnaki.',links:['illuminati','area51','rothschild','anunnaki']},
+  {id:'anunnaki',x:620,y:680,cat:'relig',title:'Anunnaki / Sumérios',aka:'Criadores da humanidade',year:'3500 a.C.',loc:'Mesopotâmia (Iraque)',lat:33,lng:44,belief:'~15%',cls:'Histórica / Extraterrestre',people:['Zecharia Sitchin','Lloyd Pye','Michael Tellinger'],desc:'Textos sumérios descrevem os Anunnaki ("os que vieram do céu") criando humanos a partir de hominídeos para minerar ouro para Nibiru. O salto evolutivo abrupto de Homo heidelbergensis para Homo sapiens há 200.000 anos seria evidência. Mitologia suméria tem extraordinária riqueza astronômica para uma civilização de 5.000 anos atrás.',links:['reptilianos','marte','planetaX']},
+  {id:'planetaX',x:720,y:720,cat:'space',title:'Planeta X / Nibiru',aka:'O planeta assassino periódico',year:'1970s',loc:'Sistema Solar externo',lat:0,lng:0,belief:'~20%',cls:'Científica alternativa',people:['Zecharia Sitchin','Nancy Lieder','Andy Lloyd'],desc:'Nibiru seria planeta (ou anã marrom) em órbita elíptica de 3.600 anos. Quando se aproxima, causa reversão de polos, extinções em massa e tsunamis. Nancy Lieder afirma receber mensagens telepáticas de ETs Zetanos sobre Nibiru. Astrofísicos confirmam que pode existir um "Planeta 9" distante — mas em órbita estável, não catastrófica.',links:['anunnaki','extinção','et_ocean']},
+
+  // ETs SUBAQUÁTICOS
+  {id:'et_ocean',x:920,y:580,cat:'ocean',title:'ETs Subaquáticos (USOs)',aka:'Bases no fundo dos oceanos',year:'1960s',loc:'Oceanos / Global',lat:0,lng:-30,belief:'~18%',cls:'Extraterrestre / Naval',people:['Ivan T. Sanderson','Preston Dennett','USS Nimitz crew'],desc:'USOs (Unidentified Submersible Objects) avistados por navios e submarinos militares desde os anos 60. A Marinha soviética encontrou humanoides a 50m de profundidade no Lago Baikal (1982 — relatório supostamente desclassificado em 2009). Triangulo das Bermudas seria entrada. Bases no Mar de Bering, Oceano Índico e Mediterrâneo profundo.',links:['bermudas','marte','lua_civil','roswell']},
+  {id:'bermudas',x:980,y:500,cat:'ocean',title:'Triângulo das Bermudas',aka:'Portal / Base ET submarina',year:'1950s',loc:'Oceano Atlântico Norte',lat:27,lng:-71,belief:'~40%',cls:'Paranormal',people:['Charles Berlitz','Ivan T. Sanderson','Vincent Gaddis'],desc:'Área entre Bermuda, Miami e Porto Rico onde naves e aviões desaparecem. Teorias: porta dimensional, base alienígena submarina, cristais da Atlântida desorientando navegação. FATO: os seguros de Lloyd\'s of London não cobram taxa adicional para a área porque a taxa de acidentes não é estatisticamente diferente de outras regiões oceânicas.',links:['et_ocean','atlantida']},
+  {id:'atlantida',x:920,y:640,cat:'sci',title:'Atlântida / Civilizações Perdidas',aka:'Civilização avançada pré-glacial',year:'360 a.C.',loc:'Atlântico / Antártida',lat:-70,lng:-30,belief:'~30%',cls:'Histórica / Científica',people:['Platão','Graham Hancock','Robert Schoch','Rand Flem-Ath'],desc:'Platão descreveu Atlântida em 360 a.C. Graham Hancock em "Fingerprints of the Gods" argumenta que existiu civilização avançada ~12.800 anos atrás destruída pelo Younger Dryas Impact Event (asteroide real documentado). A Esfinge tem erosão por água (Schoch) indicando 10.000 a.C. Estruturas submarinas em Yonaguni-Jima no Japão.',links:['bermudas','anunnaki','et_ocean','ww2_nazism']},
+
+  // GOVERNO / ESTADO
+  {id:'jfk',x:80,y:160,cat:'hist',title:'Assassinato de JFK',aka:'Dallas, 22/11/1963',year:'1963',loc:'Dallas, Texas, EUA',lat:32,lng:-97,belief:'~60–70% dos americanos',cls:'Histórica (real?)',people:['Lee Harvey Oswald','Jack Ruby','LBJ','James Angleton'],desc:'Comissão Warren (1964): atirador solitário. Comissão House (1979): "provável conspiração". A bala mágica muda de direção 7 vezes. Oswald foi eliminado por Jack Ruby antes de falar. Em 2023, Biden liberou parcialmente documentos da CIA que mostram monitoramento intenso de Oswald antes do crime. Muitos documentos seguem classificados.',links:['macos','cia','mlk','illuminati','deepstate']},
+  {id:'mlk',x:60,y:80,cat:'hist',title:'Assassinato de MLK',aka:'Memphis, 04/04/1968',year:'1968',loc:'Memphis, EUA',lat:35,lng:-90,belief:'~50%',cls:'Histórica',people:['James Earl Ray','J. Edgar Hoover','Coretta Scott King'],desc:'Em 1999, júri civil concluiu que houve conspiração envolvendo o governo americano — a família King recebeu $100 simbólicos. O FBI enviou carta anônima para MLK sugerindo que ele se suicidasse. COINTELPRO o classificava como "negro mais perigoso da América". O advogado da família acredita em envolvimento do exército.',links:['jfk','cia','cointelpro']},
+  {id:'cia',x:120,y:260,cat:'gov',title:'CIA — Operações Negras',aka:'Golpes, assassinatos e MK-Ultra',year:'1947',loc:'Langley, Virginia, EUA',lat:39,lng:-77,belief:'Alta — parcialmente real',cls:'Parcialmente real',people:['Allen Dulles','William Colby','George H.W. Bush'],desc:'CIA é confirmadamente responsável: golpes no Irã (1953), Guatemala (1954), Chile (1973); MK-Ultra; programa de crack nos guetos de LA (Gary Webb, morreu de 2 tiros declarados suicídio em 2004); assassinatos de líderes estrangeiros; COINTELPRO. A linha entre fato e teoria aqui é legitimamente fina.',links:['jfk','mlk','911','mkultra','cointelpro']},
+  {id:'cointelpro',x:40,y:160,cat:'gov',title:'COINTELPRO',aka:'Guerra do FBI aos movimentos sociais',year:'1956–1971',loc:'Washington D.C., EUA',lat:38,lng:-77,belief:'Fato documentado',cls:'Real / Desclassificado',people:['J. Edgar Hoover','Mark Felt'],desc:'REAL: programa do FBI para infiltrar e destruir movimentos — Panteras Negras, MLK, socialistas. Revelado em 1971 quando ativistas invadiram escritório do FBI em Media, PA. Incluía cartas falsas, agentes infiltrados, colaboração com gangues para assassinar líderes (Fred Hampton, 21 anos, morto enquanto dormia em 1969).',links:['mlk','cia','jfk']},
+  {id:'mkultra',x:60,y:540,cat:'gov',title:'MK-Ultra',aka:'Controle mental da CIA',year:'1953–1973',loc:'EUA / Canadá',lat:43,lng:-79,belief:'Fato documentado',cls:'Real / Desclassificado',people:['Sidney Gottlieb','Ewen Cameron','Allen Dulles'],desc:'REAL. 150 subprojetos em 80 instituições: Harvard, Stanford, prisões, hospitais. LSD dado sem consentimento, hipnose, privação sensorial, eletrochoques. Ewen Cameron destruiu personalidades de pacientes canadenses no Allan Memorial Institute. Desclassificado em 1977. Teoria: continuou clandestinamente e inclui Hollywood e tiroteios em massa.',links:['cia','manchurian','haarp','mossad']},
+  {id:'mossad',x:200,y:640,cat:'gov',title:'Mossad — Operações Globais',aka:'A mais eficiente agência do mundo',year:'1949',loc:'Israel',lat:32,lng:35,belief:'~25%',cls:'Geopolítica',people:['Rafi Eitan','Victor Ostrovsky','Jeffrey Epstein (afirmado)'],desc:'Mossad executou: Operação Ira de Deus (assassinatos de Munique), sequestro de Eichmann na Argentina, assassinatos de cientistas nucleares iranianos. Victor Ostrovsky, ex-Mossad, publicou livro denunciando operações — Israel tentou proibir nos EUA via Suprema Corte. A teoria: Epstein operava como agente de chantagem para o Mossad.',links:['epstein','deepstate','cia']},
+  {id:'manchurian',x:140,y:620,cat:'gov',title:'Candidato Manchuriano',aka:'Assassinos programados pelo MK-Ultra',year:'1950s',loc:'EUA / Coreia',lat:37,lng:127,belief:'~15%',cls:'Psicológica',people:['Richard Condon','Sirhan Sirhan','Mark David Chapman'],desc:'Sirhan Sirhan (assassino de RFK, 1968) afirma não ter memória do crime. Chapman (Lennon, 1980) estava obcecado com "O Apanhador no Campo de Centeio". Hinckley Jr. (tentativa contra Reagan) tinha vínculos familiares com os Bush. Todos são citados como possíveis produtos do programa de controle mental que teria continuado após o fim oficial do MK-Ultra.',links:['mkultra','jfk','911']},
+  {id:'deepstate',x:200,y:460,cat:'gov',title:'Estado Profundo',aka:'Deep State',year:'1990s',loc:'Washington D.C., EUA',lat:38,lng:-77,belief:'~48% nos EUA',cls:'Geopolítica',people:['Donald Trump','Mike Lofgren','Steve Bannon'],desc:'Mike Lofgren, assessor republicano do Congresso por 28 anos, escreveu em 2014 que o Estado Profundo é REAL: burocracia permanente de Pentagon, NSA, CIA e Wall Street que opera acima dos governos eleitos. A versão conspiratória estende para agenda satânica, Illuminati e QAnon — misturando fato com ficção.',links:['cia','nwo','jfk','cointelpro','qanon']},
+  {id:'qanon',x:300,y:560,cat:'tech',title:'QAnon',aka:'O Grande Despertar',year:'2017',loc:'EUA (internet)',lat:38,lng:-98,belief:'~17% nos EUA',cls:'Digital / Messiânica',people:['Q (anônimo)','Michael Flynn','Ron Watkins','Sidney Powell'],desc:'Iniciado em outubro 2017 no 4chan. "Q" postava dicas sobre elite satânica pedófila sendo destruída por Trump em "A Tempestade". Influenciou diretamente o 6 de Janeiro e produziu múltiplos atos de violência. Ron Watkins (admin do 8chan) é o principal suspeito de ser Q. Continua ativo apesar de nenhuma previsão ter se concretizado.',links:['deepstate','pizzagate','trump','pedofilia']},
+  {id:'pizzagate',x:380,y:640,cat:'tech',title:'Pizzagate',aka:'Rede pedófila em D.C.',year:'2016',loc:'Washington D.C., EUA',lat:38,lng:-77,belief:'~14%',cls:'Desinformação digital',people:['John Podesta','Hillary Clinton','Edgar Welch'],desc:'E-mails hackeados de Podesta continham referências a "pizza" e "hotdog" interpretadas como código. Edgar Welch invadiu a Comet Ping Pong com AR-15. Zero evidência de crimes. Porém: Jeffrey Epstein era REAL, e várias figuras próximas às teorias do Pizzagate de fato tinham conexões com ele — o que confunde linha entre teoria e fato.',links:['qanon','deepstate','epstein']},
+  {id:'epstein',x:480,y:700,cat:'hist',title:'Jeffrey Epstein',aka:'A ilha e os poderosos',year:'2019',loc:'Nova York / Ilha Saint Thomas',lat:18,lng:-65,belief:'~55%',cls:'Parcialmente real',people:['Jeffrey Epstein','Ghislaine Maxwell','Bill Clinton','Prince Andrew'],desc:'REAL: rede de abuso sexual com conexões a figuras globalmente poderosas. Maxwell condenada. Prince Andrew perdeu títulos. A teoria mais plausível: Epstein operava como agente de inteligência (Mossad ou CIA) coletando material de chantagem de poderosos. Morreu em custódia federal em 2019 — câmeras falharam, guardas dormiam.',links:['mossad','qanon','bildeberg']},
+  {id:'911',x:360,y:440,cat:'hist',title:'11 de Setembro',aka:'Inside Job',year:'2001',loc:'Nova York / Washington, EUA',lat:41,lng:-74,belief:'~54% globalmente',cls:'Histórica / Geopolítica',people:['Dick Cheney','Donald Rumsfeld','Larry Silverstein','PNAC'],desc:'PNAC escreveu em 2000 que precisavam de um "novo Pearl Harbor" para expansão militar. Em 2001, chegou. Edifício 7 colapsou sem ser atingido por avião. Silverstein disse "decidimos fazer o pull it". Pentagon hit: câmeras apreendidas imediatamente. Documentos sauditas desclassificados em 2021 mostram possíveis conexões com governo saudita.',links:['cia','nwo','manchurian','haarp','petrodolar','deepstate']},
+  {id:'petrodolar',x:520,y:520,cat:'econ',title:'Sistema Petrodólar',aka:'Guerras por hegemonia monetária',year:'1973',loc:'Oriente Médio / EUA',lat:25,lng:45,belief:'~30%',cls:'Geoeconômica',people:['Henry Kissinger','Richard Nixon','Saddam Hussein'],desc:'Kissinger negociou em 1974: Arábia Saudita vende petróleo APENAS em dólares, EUA protege militarmente. Sistema REAL que sustenta o dólar. Países que tentaram sair: Iraque (Saddam, 2000 — invadido 2003), Líbia (Kadafi propôs dinar-ouro pan-africano — derrubado 2011). Irã e China tentam criar sistema paralelo desde 2012.',links:['911','rothschild','nwo']},
+
+  // TECNOLOGIA / MÍDIA
+  {id:'5g',x:800,y:250,cat:'tech',title:'5G e Controle',aka:'Radiação e vigilância total',year:'2019',loc:'Global',lat:50,lng:10,belief:'~20%',cls:'Tecnológica',people:['Barrie Trower','David Icke'],desc:'5G causaria COVID (ou foi implantado aproveitando a pandemia como distração). Realizaria controle mental via frequências ELF. Centenas de antenas incendiadas na Europa em 2020. Huawei 5G teria backdoors para inteligência chinesa — esta última é debate REAL entre governos ocidentais e foi banida em vários países.',links:['chemtrails','covid','nwo','haarp','bigbrother']},
+  {id:'bigbrother',x:700,y:270,cat:'tech',title:'Vigilância Total',aka:'NSA e o Panóptico digital',year:'2013',loc:'EUA / China / Global',lat:39,lng:-100,belief:'Alta — Snowden confirmou parte',cls:'Parcialmente real',people:['Edward Snowden','Keith Alexander','Mark Zuckerberg'],desc:'PRISM da NSA vigiava comunicações globais — REAL, confirmado por Snowden em 2013. A teoria estendida: reconhecimento facial + análise de metadados + Alexa/Siri + redes sociais = monitoramento total. China já tem o Social Credit System funcionando. Em 2022, revelou-se que NSA comprava dados de localização de americanos diretamente de corretores de dados.',links:['deepstate','cia','nwo','5g']},
+  {id:'covid',x:460,y:560,cat:'med',title:'COVID-19 / Plandemia',aka:'Grande Reinício',year:'2019',loc:'Wuhan, China / Global',lat:30,lng:114,belief:'~46%',cls:'Médica / Geopolítica',people:['Bill Gates','Anthony Fauci','Klaus Schwab','Peter Daszak'],desc:'Hipótese do laboratório (Wuhan Institute of Virology, ganho de função financiado por EcoHealth/NIH): em 2023, FBI e DOE classificaram como "provavelmente vazamento de laboratório". A teoria ampla: pandemia foi planejada para resetar a economia (Grande Reinício do WEF) e implementar passaportes digitais e identidade biométrica global.',links:['nwo','vacinacao','gates','onu','5g','davos']},
+  {id:'vacinacao',x:360,y:700,cat:'med',title:'Vacinas e Controle',aka:'Microchips, DNA e depopulação',year:'1998',loc:'Global',lat:51,lng:-1,belief:'~30% duvidam de vacinas',cls:'Médica',people:['Andrew Wakefield','Robert F. Kennedy Jr.','Peter McCullough'],desc:'Estudo Wakefield (1998) ligou vacinas ao autismo — retratado, ele perdeu a licença por fraude. COVID-19: vacinas mRNA alteram DNA permanentemente (falso — mRNA não entra no núcleo), contêm grafeno e microchips (falso — grafeno foi detectado como contaminação em alguns lotes, não como design), ou são instrumento de depopulação.',links:['covid','gates','chemtrails','depop']},
+  {id:'gates',x:320,y:480,cat:'tech',title:'Bill Gates',aka:'Agenda de controle e depopulação',year:'2020',loc:'Seattle, EUA',lat:47,lng:-122,belief:'~28%',cls:'Tecnológica / Médica',people:['Bill Gates','Melinda Gates','Anthony Fauci'],desc:'Discurso TED 2010: Gates falou que com vacinas e saúde reprodutiva, mortalidade infantil cai e natalidade diminui — tirado de contexto como "admissão" de depopulação. ID2020 (identidade digital vinculada à saúde) existe como projeto real. Comprou mais terra agrícola americana do que qualquer outro proprietário privado — o que controla o alimento controla tudo.',links:['covid','nwo','vacinacao','svalbard']},
+
+  // RELIGIÃO / OCULTISMO
+  {id:'olho',x:260,y:400,cat:'relig',title:'Olho que Tudo Vê',aka:'Símbolo Illuminati no dólar',year:'1782',loc:'EUA',lat:39,lng:-98,belief:'~20%',cls:'Simbólica',people:['Charles Thomson','Henry Wallace'],desc:'O olho na pirâmide do dólar (adotado em 1935) é historicamente símbolo cristão da Providência. Wallace e Roosevelt, ambos maçons, escolheram o design. "Novus Ordo Seclorum" vem da Eneida de Virgílio. A pirâmide tem 13 andares (13 colônias). Interpretação conspiratória: símbolo Illuminati na moeda de reserva global.',links:['macos','illuminati','dollar']},
+  {id:'dollar',x:160,y:320,cat:'econ',title:'Símbolos no Dólar',aka:'Mensagens maçônicas ocultas',year:'1935',loc:'Washington D.C., EUA',lat:38,lng:-77,belief:'~25%',cls:'Simbólica',people:['Franklin Roosevelt','Henry Wallace'],desc:'Nota de $1 tem: pirâmide inacabada, olho da Providência, "E Pluribus Unum", "Annuit Coeptis", "Novus Ordo Seclorum", 13 estrelas, 13 folhas, 13 flechas, 13 andares. Muitos elementos são de fato maçônicos porque os Pais Fundadores eram maçons. O design foi escolhido por Wallace (Grau 32 da Maçonaria) e aprovado por Roosevelt.',links:['olho','macos','rothschild']},
+  {id:'pedofilia',x:420,y:720,cat:'relig',title:'Redes Pedófilas da Elite',aka:'Satanic Panic e casos reais',year:'1980s',loc:'Global',lat:51,lng:-1,belief:'~20%',cls:'Criminal / Ocultista',people:['Jimmy Savile','Jeffrey Epstein','Harvey Weinstein'],desc:'Jimmy Savile (BBC) abusou de centenas por décadas — REAL e descoberto após sua morte. Epstein — REAL. Weinstein — REAL. Operação Midnight Climax (subprojeto MK-Ultra) usava prostitutas para seduzir políticos e filmar secretamente para chantagem — REAL. A teoria estende para rituais satânicos globais — esta parte não tem evidência.',links:['qanon','pizzagate','epstein','mkultra']},
+
+  // EVENTOS HISTÓRICOS
+  {id:'kubrick',x:560,y:720,cat:'hist',title:'Kubrick e a NASA',aka:'O Iluminado como confissão',year:'1980',loc:'Los Angeles, EUA',lat:34,lng:-118,belief:'~10%',cls:'Cultural',people:['Stanley Kubrick','Jay Weidner'],desc:'O Overlook Hotel tem impossibilidades geométricas propositais. Room 237 corresponde ao Módulo Lunar. O suéter de Danny tem raquete Apollo. Em 2015, um "vídeo de confissão de Kubrick" viralizou — era ficção de T. Patrick Murray. A teoria: "O Iluminado" (1980) é a confissão codificada de Kubrick sobre ter filmado as imagens da Lua.',links:['luna','illuminati']},
+  {id:'diana',x:380,y:100,cat:'hist',title:'Morte de Diana',aka:'Assassinato pelo MI6',year:'1997',loc:'Paris, França',lat:48,lng:2,belief:'~38% dos britânicos',cls:'Histórica',people:['Mohamed Al-Fayed','Henri Paul','Dodi Fayed'],desc:'Al-Fayed acusa o MI6 de assassinar Diana e Dodi para evitar casamento com muçulmano. Diana teria dito que seria "eliminada em acidente de carro". Dois inquéritos concluíram: acidente — Henri Paul com 3x o limite de álcool e traces de antidepressivo. Mas: câmeras do túnel foram apagadas 20 minutos antes do acidente.',links:['macos','reptilianos','illuminati']},
+  {id:'pearl_harbor',x:80,y:720,cat:'hist',title:'Pearl Harbor',aka:'FDR sabia de antemão',year:'1941',loc:'Hawaii, EUA',lat:21,lng:-158,belief:'~25%',cls:'Histórica',people:['Franklin D. Roosevelt','Henry Stimson'],desc:'FDR sabia do ataque e deixou acontecer para justificar entrada na guerra. Evidências: frota de porta-aviões estava ausente de Pearl Harbor no dia do ataque, sinais de inteligência interceptados (Magic) que não chegaram a tempo ao comandante local. Investigações históricas concluem: incompetência burocrática, não conivência — mas debate continua.',links:['cia','911']},
+  {id:'trump',x:320,y:680,cat:'tech',title:'Trump e Conspirações',aka:'MAGA / Eleição Roubada',year:'2015',loc:'EUA',lat:40,lng:-74,belief:'~60% dos republicanos',cls:'Política',people:['Donald Trump','Steve Bannon','Roger Stone'],desc:'Trump foi simultaneamente veículo e vítima de conspirações. Promoveu: eleição 2020 roubada (60 tribunais rejeitaram, incluindo nomeados por ele), QAnon, estado profundo, vacinas. Foi alvo: Russiagate. Seu estilo normalizou o conspiracionismo como estratégia política mainstream — exportado para governos ao redor do mundo.',links:['qanon','deepstate','pizzagate','nwo']},
+  {id:'ww2_nazism',x:220,y:80,cat:'hist',title:'Nazismo e Ocultismo',aka:'Thule Society e Vril',year:'1918',loc:'Munique, Alemanha',lat:48,lng:11,belief:'~20%',cls:'Histórica / Ocultista',people:['Heinrich Himmler','Rudolf Hess','Karl Haushofer','Maria Orsic'],desc:'A Thule-Gesellschaft fundou o partido nazista em torno de crenças em ários Atlantes e contato extraterrestre. Maria Orsic (Vril Society) afirmava receber mensagens telepáticas de ETs de Aldebaran. Himmler acreditava no Santo Graal e financiou expedições ao Tibet. O Ahnenerbe (instituto nazista de pesquisa ancestral) era REAL e financiado pelo estado.',links:['antigravidade','atlantida','anunnaki','paperclip']},
+
+  // CIÊNCIA ALTERNATIVA
+  {id:'terraPlana',x:840,y:330,cat:'sci',title:'Terra Plana',aka:'Flat Earth',year:'1800s / 2015',loc:'Global (internet)',lat:51,lng:-1,belief:'~3% crescendo',cls:'Científica alternativa',people:['Samuel Rowbotham','Eric Dubay','B.o.B'],desc:'Terra é disco plano com Antártida como muro de gelo. Flat Earth Society tem membros em 190 países. Eric Dubay escreveu "200 Proofs Earth is Not a Spinning Ball". A motivação teórica do encobrimento: para que a humanidade se sinta insignificante num cosmos imensurável — desempoderada. Terra plana = humanidade é o centro e propósito do universo.',links:['nasa','onu','luna']},
+
+  // ─── ANTICRISTO ───
+  {id:'anticristo',x:200,y:760,cat:'apc',title:'O Anticristo',aka:'O Grande Vilão Profetizado',year:'Séc. I d.C. — presente',loc:'Global / Profecia',lat:31,lng:35,belief:'~40% de cristãos acreditam em sua vinda',cls:'Religiosa / Profética',people:['Nero (candidato histórico)','Papa (candidato protestante)','Henry Kissinger','Barack Obama','Klaus Schwab'],desc:'O Anticristo do Apocalipse de João: um líder carismático que surgirá nos últimos tempos, imporá um governo único mundial, exigirá adoração, e marcará a população com "a marca da besta" (666) sem a qual ninguém poderá comprar ou vender. Candidatos históricos: Nero, Napoleão, Hitler, Mussolini. Candidatos contemporâneos: figuras do WEF, líderes da ONU, ou qualquer político global carismático. A "marca da besta" hoje é identificada com chips de RFID, passaportes digitais, ou o ID2020.',links:['anticristo1971','nwo','onu','davos','georgiastone','illuminati']},
+
+  {id:'anticristo1971',x:100,y:840,cat:'apc',title:'O Anticristo Nasceu em 1971',aka:'Geração de 54 anos no poder',year:'1971 — presente',loc:'Global',lat:40,lng:-74,belief:'Circula em grupos religiosos fundamentalistas',cls:'Religiosa / Especulativa',people:['Elon Musk (28/06/1971)','Justin Trudeau (25/12/1971)','Marco Rubio (28/05/1971)','Abu Bakr al-Baghdadi (28/07/1971)','Gretchen Whitmer (23/08/1971)'],desc:'A teoria circula em comunidades cristãs fundamentalistas e conspiracionistas: o Anticristo nasceu em 1971 e hoje tem 54 anos — idade ideal para ter acumulado poder suficiente antes de revelar seu "verdadeiro propósito". O candidato mais citado é Elon Musk: controla satélites (Starlink), redes sociais (X), IA (xAI), interface cérebro-máquina (Neuralink), moeda digital e tem acesso privilegiado ao governo americano via DOGE. Justin Trudeau nasceu em 25/12/1971 — no Natal — o que conspiracionistas consideram uma "inversão satânica". Al-Baghdadi (califa do ISIS) também nasceu em 28/07/1971. A coincidência de múltiplas figuras de poder extremo na mesma coorte alimenta a teoria — embora pessoas poderosas nasçam em qualquer ano.',links:['anticristo','illuminati','nwo','simul','reptilianos']},
+
+  {id:'marca_besta',x:300,y:840,cat:'apc',title:'Marca da Besta — 666',aka:'Chip, biometria e controle total',year:'Séc. I / 2020s',loc:'Global',lat:41,lng:-74,belief:'~25% dos evangélicos identificam sinais contemporâneos',cls:'Religiosa / Tecnológica',people:['John of Patmos','Pat Robertson','Tim LaHaye','John Hagee'],desc:'O Apocalipse descreve uma marca no punho direito ou testa, sem a qual ninguém compra ou vende. Identificações modernas: chips de RFID implantados (já usados em trabalhadores suecos), biometria para pagamentos, CBDCs (moedas digitais dos bancos centrais), passaportes de vacinação. O número 666 aparece no código de barras EAN-13 (os marcadores delimitadores são idênticos ao padrão do 6), o que alimentou teorias nos anos 80. Revelations 13:18: "aqui está a sabedoria. Quem tiver entendimento calcule o número da besta."',links:['anticristo','anticristo1971','vacinacao','bigbrother','nwo']},
+
+  // ─── PROBLEMA DOS TRÊS CORPOS ───
+  {id:'tres_corpos',x:980,y:260,cat:'cosm',title:'Problema dos 3 Corpos — É Real',aka:'Civilizações solucionando o caos orbital',year:'Séc. XVIII / 2006 (Liu Cixin)',loc:'Global / Universo',lat:40,lng:116,belief:'Especulativo — debate cosmológico',cls:'Científica / Filosófica',people:['Liu Cixin','Poincaré (matemático)','Michio Kaku','Stephen Hawking'],desc:'O Problema dos Três Corpos (matemática real de Poincaré, 1887) é um sistema caótico sem solução analítica geral — três corpos gravitacionalmente interagindo têm trajetórias imprevisíveis. A teoria conspiratória inspirada em Liu Cixin: civilizações avançadas em sistemas estelares trinários (como Alpha Centauri A, B e Próxima Centauri — REAL sistema triplo a 4,2 anos-luz) estariam em perpétua instabilidade e buscariam sistemas estáveis para colonizar. A Terra seria um "alvo" identificado por sua posição privilegiada num sistema de estrela única. A série de Liu Cixin propõe que qualquer civilização suficientemente avançada se torna uma ameaça existencial — daí o "Floresta Obscura": silêncio cósmico como estratégia de sobrevivência. Isso explicaria o Paradoxo de Fermi.',links:['fermi','dark_forest','anunnaki','et_ocean','simul']},
+
+  {id:'fermi',x:980,y:160,cat:'cosm',title:'Paradoxo de Fermi',aka:'Onde estão todos?',year:'1950 — presente',loc:'Los Alamos, EUA',lat:35,lng:-106,belief:'Debate científico genuíno',cls:'Científica / Filosófica',people:['Enrico Fermi','Frank Drake','Carl Sagan','Michael Hart'],desc:'Em 1950, Fermi perguntou: dado o número de estrelas, planetas e tempo disponível, civilizações inteligentes deveriam ser comuns — então onde estão todos? Resoluções: (1) Hipótese da Terra Rara — condições da Terra são excepcionalmente raras; (2) Floresta Obscura — civilizações se ocultam por medo; (3) Filtro Grande — algo elimina civilizações antes de expandirem (guerra nuclear, IA, ecologia); (4) Zoo Hipótese — estamos sendo observados mas não contatados deliberadamente; (5) Já estamos sendo visitados e os governos ocultam.',links:['tres_corpos','dark_forest','area51','nasa','simul']},
+
+  {id:'dark_forest',x:980,y:360,cat:'cosm',title:'Teoria da Floresta Obscura',aka:'Silêncio cósmico como arma',year:'2008 (Liu Cixin)',loc:'China / Universo',lat:40,lng:116,belief:'Hipótese cosmológica debatida',cls:'Científica / Filosófica',people:['Liu Cixin','Stephen Hawking','Elon Musk'],desc:'A "Floresta Obscura" de Liu Cixin: o universo é como uma floresta escura onde cada civilização é um caçador armado. Revelar sua posição (transmitir sinais) é suicídio. Toda civilização que encontra outra destrói preventivamente antes de ser destruída. Isso explica o Paradoxo de Fermi E o silêncio do SETI. Stephen Hawking alertou repetidamente contra transmitir nossa posição. Elon Musk disse que a hipótese de Hawking era "perturbadoramente plausível". A conspiração: governos sabem de sinais de civilizações hostis detectados e ocultam para evitar pânico global.',links:['tres_corpos','fermi','nasa','extinção','simul']},
+
+  {id:'seti_silencio',x:980,y:460,cat:'cosm',title:'SETI e o Grande Silêncio',aka:'Sinais ocultados pelo governo',year:'1960 — presente',loc:'Green Bank, EUA / Global',lat:38,lng:-80,belief:'~30%',cls:'Científica / Conspiracionista',people:['Frank Drake','Jocelyn Bell Burnell','Wow! Signal (1977)'],desc:'O "Wow! Signal" (1977) foi um sinal de rádio de 72 segundos na frequência de 1420 MHz (hidrogênio — a frequência "universal" para comunicação) que nunca foi repetido ou explicado. O SETI Institute recebeu sinal de Próxima Centauri em 2020 (BLC1) — depois descartado como interferência de rádio humana. Teoria: múltiplos sinais foram detectados e classificados. A descoberta real de vida inteligente seria "gerenciada" pelos governos para evitar colapso social, religioso e econômico.',links:['fermi','dark_forest','nasa','area51']},
+
+  // ─── ANJOS E DEMÔNIOS SÃO ETs ───
+  {id:'anjos_ets',x:980,y:560,cat:'cosm',title:'Anjos e Demônios são ETs',aka:'Seres interdimensionais das religiões',year:'Antiguidade — presente',loc:'Global / Religiões',lat:31,lng:35,belief:'~20%',cls:'Religiosa / Extraterrestre',people:['Erich von Däniken','Zecharia Sitchin','Jacques Vallée','Giorgio Tsoukalos'],desc:'A teoria central: todas as religiões do mundo descrevem encontros com a mesma coisa — seres tecnologicamente avançados de outras dimensões ou planetas. Anjos = ETs de alta vibração dimensional. Demônios = ETs de outra facção, possivelmente reptilianos. A Bíblia, o Corão, textos sumérios, védicos e maias descrevem veículos voadores (merkabá, vimanas, carruagens de fogo), seres luminosos e intervenções "divinas" que são indistinguíveis de tecnologia avançada. A lei de Clarke: "qualquer tecnologia suficientemente avançada é indistinguível de magia."',links:['anjos_biblia','anjos_islam','anjos_vedico','anunnaki','reptilianos','et_ocean']},
+
+  {id:'anjos_biblia',x:980,y:660,cat:'cosm',title:'ETs na Bíblia',aka:'Carruagens de fogo e seres de luz',year:'Séc. VI a.C. — I d.C.',loc:'Médio Oriente',lat:31,lng:35,belief:'~25% de cristãos consideram possível',cls:'Religiosa / Extraterrestre',people:['Erich von Däniken','Josef Blumrich (engenheiro NASA)','Paul von Ward'],desc:'Ezequiel 1: "vi uma nuvem de fogo, um clarão ao redor, e do meio saiu algo como eletrum... quatro criaturas... com rodas que se moviam em qualquer direção sem girar." Josef Blumrich, engenheiro-chefe da NASA, publicou "A Nave Espacial de Ezequiel" (1974) descrevendo o projeto como veículo de pouso funcionalmente viável. Gênesis 6: "os filhos de Deus viram que as filhas dos homens eram belas" — os Nephilim seriam híbridos humano-ET. A Estrela de Belém: objeto que "parou" sobre um local específico. A ressurreição: tecnologia de ressuscitação ou upload de consciência.',links:['anjos_ets','anunnaki','nephilim','simul']},
+
+  {id:'nephilim',x:980,y:760,cat:'cosm',title:'Nephilim — Gigantes Híbridos',aka:'Filhos dos deuses e das humanas',year:'Pré-dilúvio / presente',loc:'Médio Oriente / Global',lat:31,lng:35,belief:'~15%',cls:'Religiosa / Extraterrestre',people:['Michael Heiser','Tom Horn','Steve Quayle'],desc:'Gênesis 6 descreve os Nephilim como filhos de "ben Elohim" (filhos dos deuses/anjos) com mulheres humanas — gigantes de até 3-6 metros. Fósseis de gigantes são encontrados periodicamente mas suprimidos pelo Smithsonian (teoria). Enoque (texto canônico etíope) detalha que 200 "Vigilantes" desceram ao Monte Hermon, ensinaram metalurgia, astronomia e magia, e geraram os Nephilim. Teoria: experimento genético alienígena que produziu os "heróis da antiguidade" de todas as mitologias — Hércules, Gilgamesh, Osiris.',links:['anjos_biblia','anjos_ets','anunnaki','atlantida']},
+
+  {id:'anjos_islam',x:860,y:740,cat:'cosm',title:'ETs no Islã e no Corão',aka:'Djinn, Anjos e Seres de Fogo',year:'Séc. VII d.C.',loc:'Arábia / Global',lat:21,lng:39,belief:'~15% de muçulmanos consideram',cls:'Religiosa / Extraterrestre',people:['Harun Yahya','Adnan Oktar','estudiosos contemporâneos'],desc:'O Corão menciona explicitamente duas criações além dos humanos: Anjos (de luz) e Djinn (de "fogo sem fumaça" — plasma?). Os Djinn têm livre-arbítrio, constroem estruturas (Sulemão os comandava na construção do Templo), viajam a velocidades extremas e habitam dimensões paralelas. A Surata Al-Rahman diz que Allah criou os djinn de "fogo puro" — compatível com seres de plasma ou energia. A Isra e Mi\'raj (viagem noturna de Maomé) descreve transporte instantâneo de Meca a Jerusalém e ascensão pelos "céus" — viagem interdimensional ou ET?',links:['anjos_ets','simul','et_ocean']},
+
+  {id:'anjos_vedico',x:860,y:840,cat:'cosm',title:'Vimanas e Devas Védicos',aka:'Naves de guerra na antiguidade',year:'2000 a.C. — presente',loc:'Índia / Subcontinente',lat:20,lng:78,belief:'~20% na Índia',cls:'Religiosa / Extraterrestre',people:['David Childress','Erich von Däniken','Shivkar Bapuji Talpade'],desc:'Os textos védicos (Ramayana, Mahabharata) descrevem Vimanas — veículos voadores usados em batalhas com "armas Brahmastra" (energia nuclear?). O Mahabharata descreve uma arma que "criou um clarão de luz e calor violento... os mortos ficaram irreconhecíveis." Idêntico a uma descrição de bomba atômica. J. Robert Oppenheimer, ao ver o teste Trinity (1945), citou o Bhagavad Gita: "Agora me tornei a Morte, destruidora de mundos" — sugerindo familiaridade. Os Devas e Asuras seriam duas facções de ETs em guerra usando a Terra como campo de batalha.',links:['anjos_ets','anunnaki','ww2_nazism']},
+];
+
+// ═══════════════════════════ INIT ═══════════════════════════
+const NM={};N.forEach(n=>NM[n.id]=n);
+let totalLinks=0;N.forEach(n=>totalLinks+=n.links.length);totalLinks=Math.floor(totalLinks/2);
+document.getElementById('sc').textContent=N.length;
+document.getElementById('slk').textContent=totalLinks;
+setInterval(()=>{const d=new Date();document.getElementById('clk').textContent=d.toTimeString().slice(0,8);},1000);
+
+// ═══════════════════════════ TABS ═══════════════════════════
+let wmDone=false;
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+    document.getElementById('v'+t.dataset.v).classList.add('on');
+    if(t.dataset.v==='wm'&&!wmDone){
+      // defer until view is painted and has dimensions
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{initWorldMap();wmDone=true;}));
+    }
+  });
+});
+
+// ═══════════════════════════ NETWORK ═══════════════════════════
+const board=document.getElementById('vnet');
+const nc=document.getElementById('nc');const nl=document.getElementById('nl');
+const ctx=nc.getContext('2d');
+let sc=1,ox=0,oy=0,dragging=false,dsx=0,dsy=0,dsox=0,dsoy=0;
+let activeCats=new Set(Object.keys(CATS));
+let srch='';let curNode=null;
+
+// Legend
+(()=>{const leg=document.getElementById('nleg');leg.innerHTML='';Object.entries(CATS).forEach(([k,v])=>{leg.innerHTML+=`<div class="li"><div class="ld" style="background:${v.c}"></div>${v.l}</div>`;});})();
+
+// Filters
+(()=>{
+  const fr=document.getElementById('frow');
+  Object.entries(CATS).forEach(([k,v])=>{
+    const b=document.createElement('button');b.className='fbt on';b.textContent=k.toUpperCase();
+    b.style.borderColor=v.c;b.style.color=v.c;
+    b.onclick=()=>{
+      if(activeCats.has(k)){if(activeCats.size>1)activeCats.delete(k);}else activeCats.add(k);
+      b.classList.toggle('on',activeCats.has(k));renderNet();drawNet();
+    };fr.appendChild(b);
+  });
+})();
+
+document.getElementById('nsrch').addEventListener('input',e=>{srch=e.target.value.toLowerCase();renderNet();drawNet();});
+
+function visNodes(){return N.filter(n=>{if(!activeCats.has(n.cat))return false;if(srch&&!n.title.toLowerCase().includes(srch)&&!n.aka.toLowerCase().includes(srch))return false;return true;});}
+
+function resizeCanvas(){nc.width=board.clientWidth;nc.height=board.clientHeight;drawNet();}
+
+function drawNet(){
+  ctx.clearRect(0,0,nc.width,nc.height);
+  const vis=new Set(visNodes().map(n=>n.id));
+  const drawn=new Set();
+  N.forEach(n=>{
+    if(!vis.has(n.id))return;
+    n.links.forEach(lid=>{
+      if(!vis.has(lid))return;
+      const key=[n.id,lid].sort().join('|');
+      if(drawn.has(key))return;drawn.add(key);
+      const t=NM[lid];if(!t)return;
+      const ax=n.x*sc+ox+72,ay=n.y*sc+oy+24;
+      const bx=t.x*sc+ox+72,by=t.y*sc+oy+24;
+      const isAct=curNode&&(curNode.id===n.id||curNode.id===lid);
+      ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(bx,by);
+      ctx.strokeStyle=isAct?'rgba(255,190,60,.8)':'rgba(180,220,255,.055)';
+      ctx.lineWidth=isAct?1.8:.7;ctx.setLineDash(isAct?[]:[3,6]);
+      ctx.stroke();ctx.setLineDash([]);
+    });
+  });
+}
+
+function renderNet(){
+  nl.innerHTML='';
+  const vis=new Set(visNodes().map(n=>n.id));
+  N.forEach(n=>{
+    const el=document.createElement('div');el.className='nn';
+    const c=CATS[n.cat];
+    el.style.left=(n.x*sc+ox)+'px';el.style.top=(n.y*sc+oy)+'px';
+    el.style.zIndex=Math.round(n.y);el.style.color=c.c;
+    if(!vis.has(n.id))el.style.display='none';
+    el.innerHTML=`<div class="ncard" style="border-color:${c.c}30;background:${c.c}09"><div class="npin" style="background:${c.c}"></div><div class="ntit" style="color:${c.c}">${n.title}</div><div class="nsub">${n.aka}</div></div>`;
+    el.onclick=ev=>{ev.stopPropagation();openDP(n);};
+    nl.appendChild(el);
+  });
+}
+
+function openDP(n){
+  curNode=n;const c=CATS[n.cat];
+  const badge=document.getElementById('dp-badge');badge.textContent=c.l;badge.style.borderColor=c.c;badge.style.color=c.c;
+  document.getElementById('dp-title').textContent=n.title;
+  document.getElementById('dp-aka').textContent=n.aka;
+  document.getElementById('dp-yr').textContent=n.year||'—';
+  document.getElementById('dp-loc').textContent=n.loc||'—';
+  document.getElementById('dp-cls').textContent=n.cls||'—';
+  document.getElementById('dp-bel').textContent=n.belief||'—';
+  document.getElementById('dp-desc').textContent=n.desc;
+  const pl=document.getElementById('dp-plist');pl.innerHTML='';
+  (n.people||[]).forEach(p=>pl.innerHTML+=`<span class="ptag">${p}</span>`);
+  const ll=document.getElementById('dp-llist');ll.innerHTML='';
+  (n.links||[]).forEach(lid=>{const t=NM[lid];if(!t)return;const s=document.createElement('span');s.className='ltag';s.textContent=t.title;s.onclick=()=>openDP(t);ll.appendChild(s);});
+  document.getElementById('dp-ask').onclick=()=>sendPrompt(`Me explique a teoria da conspiração "${n.title}" (${n.aka}) em profundidade: origem histórica, principais defensores, evidências citadas, o que a ciência ou investigações dizem, e por que essa teoria ressoa com tantas pessoas.`);
+  document.getElementById('dp').classList.add('on');drawNet();renderNet();
+}
+
+document.getElementById('dp-x').onclick=()=>{document.getElementById('dp').classList.remove('on');curNode=null;drawNet();renderNet();};
+board.addEventListener('mousedown',e=>{if(e.target.closest('.nn')||e.target.closest('#dp')||e.target.closest('#ntb')||e.target.closest('#nleg')||e.target.closest('#nzm'))return;dragging=true;dsx=e.clientX;dsy=e.clientY;dsox=ox;dsoy=oy;});
+window.addEventListener('mousemove',e=>{if(!dragging)return;ox=dsox+(e.clientX-dsx);oy=dsoy+(e.clientY-dsy);renderNet();drawNet();});
+window.addEventListener('mouseup',()=>dragging=false);
+board.addEventListener('wheel',e=>{e.preventDefault();const r=board.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;const d=e.deltaY>0?.88:1.12,ns=Math.max(.25,Math.min(3,sc*d));ox=mx-(mx-ox)*(ns/sc);oy=my-(my-oy)*(ns/sc);sc=ns;renderNet();drawNet();},{passive:false});
+document.getElementById('zin').onclick=()=>{sc=Math.min(3,sc*1.2);renderNet();drawNet();};
+document.getElementById('zout').onclick=()=>{sc=Math.max(.25,sc/1.2);renderNet();drawNet();};
+document.getElementById('zfit').onclick=()=>{sc=1;ox=0;oy=0;renderNet();drawNet();};
+window.addEventListener('resize',()=>{resizeCanvas();renderNet();});
+resizeCanvas();renderNet();
+
+// ═══════════════════════════ TIMELINE ═══════════════════════════
+(()=>{
+  const sorted=[...N].filter(n=>n.year).sort((a,b)=>(parseInt(a.year)||0)-(parseInt(b.year)||0));
+  const eras=[
+    {l:'ANTIGUIDADE / MEDIEVAL',min:-9999,max:1700},
+    {l:'SÉC. XVIII — XIX',min:1700,max:1900},
+    {l:'INÍCIO DO SÉC. XX',min:1900,max:1945},
+    {l:'GUERRA FRIA',min:1945,max:1991},
+    {l:'PÓS-GUERRA FRIA',min:1991,max:2010},
+    {l:'ERA DIGITAL / PANDEMIA',min:2010,max:9999},
+  ];
+  const activeTL=new Set(Object.keys(CATS));
+  const flt=document.getElementById('tl-flt');
+  const body=document.getElementById('tlbody');
+  Object.entries(CATS).forEach(([k,v])=>{
+    const b=document.createElement('button');b.className='tlfbt on';b.textContent=v.l;
+    b.style.borderColor=v.c;b.style.color=v.c;
+    b.onclick=()=>{if(activeTL.has(k)){if(activeTL.size>1)activeTL.delete(k);}else activeTL.add(k);b.classList.toggle('on',activeTL.has(k));renderTL();};
+    flt.appendChild(b);
+  });
+  function renderTL(){
+    body.innerHTML='';let side=0;
+    eras.forEach(era=>{
+      const items=sorted.filter(n=>{const y=parseInt(n.year)||0;return y>=era.min&&y<era.max&&activeTL.has(n.cat);});
+      if(!items.length)return;
+      body.innerHTML+=`<div class="tlera">${era.l}</div>`;
+      items.forEach(n=>{
+        const c=CATS[n.cat];const isL=side%2===0;
+        const div=document.createElement('div');div.className=`tli ${isL?'L':'R'}`;
+        div.innerHTML=`<div class="tlhalf"></div><div class="tldot" style="background:${c.c};border-color:${c.c}"></div><div class="tlhalf"><div class="tlcard" style="border-color:${c.c}44"><div class="tlyr" style="color:${c.c}">${n.year}</div><div class="tlnm">${n.title}</div><div class="tlloc">${n.loc||''}</div><div class="tlsnip">${n.desc.slice(0,110)}…</div></div></div>`;
+        div.querySelector('.tlcard').onclick=()=>{document.querySelectorAll('.tab')[0].click();setTimeout(()=>openDP(n),150);};
+        body.appendChild(div);side++;
+      });
+    });
+    if(!body.innerHTML)body.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:11px">Nenhuma teoria nesta seleção.</div>';
+  }
+  renderTL();
+})();
+
+// ═══════════════════════════ WORLD MAP ═══════════════════════════
+function initWorldMap(){
+  const container=document.getElementById('vwm');
+  // Use app dimensions since container may still be computing layout
+  const appEl=document.getElementById('app');
+  const W=appEl.clientWidth||window.innerWidth;
+  const H=appEl.clientHeight||(window.innerHeight-42);
+
+  const svg=d3.select('#wmap').attr('width',W).attr('height',H);
+  const g=svg.append('g');
+  const proj=d3.geoNaturalEarth1().scale(W/6.1).translate([W/2,H/2]);
+  const pathGen=d3.geoPath().projection(proj);
+  const graticule=d3.geoGraticule()();
+  g.append('path').datum({type:'Sphere'}).attr('d',pathGen).attr('fill','#060f18').attr('stroke','none');
+  g.append('path').datum(graticule).attr('d',pathGen).attr('class','graticule');
+
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r=>r.json())
+    .then(world=>{
+      const countries=topojson.feature(world,world.objects.countries);
+      g.selectAll('.land').data(countries.features).enter().append('path').attr('class','land').attr('d',pathGen);
+      addDots();
+    })
+    .catch(()=>addDots());
+
+  function addDots(){
+    // group by approx location
+    const groups={};
+    N.forEach(n=>{
+      if(!n.lat&&!n.lng)return;
+      if(n.lat===0&&n.lng===0)return;
+      const key=Math.round(n.lat/4)*4+','+Math.round(n.lng/8)*8;
+      if(!groups[key])groups[key]={lat:n.lat,lng:n.lng,nodes:[]};
+      groups[key].nodes.push(n);
+    });
+
+    Object.values(groups).forEach(gr=>{
+      const pt=proj([gr.lng,gr.lat]);
+      if(!pt||isNaN(pt[0]))return;
+      const [px,py]=pt;
+      const first=gr.nodes[0];const c=CATS[first.cat].c;
+      const r=7+Math.min(gr.nodes.length*4,14);
+      const grp=g.append('g').style('cursor','pointer');
+      grp.append('circle').attr('cx',px).attr('cy',py).attr('r',r)
+        .attr('fill',c+'77').attr('stroke',c).attr('stroke-width',1.2);
+      if(gr.nodes.length>1){
+        grp.append('text').attr('x',px).attr('y',py+3.5).attr('text-anchor','middle')
+          .attr('fill','#fff').attr('font-size',9).attr('pointer-events','none').text(gr.nodes.length);
+      }
+      grp.append('text').attr('x',px).attr('y',py-r-3).attr('text-anchor','middle')
+        .attr('fill',c).attr('font-size',7).attr('pointer-events','none')
+        .attr('font-family','Share Tech Mono,monospace').text(first.title.slice(0,16));
+      grp.on('mouseenter',function(){d3.select(this).select('circle').attr('r',r+4);})
+         .on('mouseleave',function(){d3.select(this).select('circle').attr('r',r);})
+         .on('click',()=>{
+           const p=document.getElementById('wmpanel');
+           document.getElementById('wmp-title').textContent=gr.nodes.map(n=>n.title).join(' / ');
+           document.getElementById('wmp-loc').textContent='📍 '+gr.nodes[0].loc;
+           document.getElementById('wmp-body').textContent=gr.nodes.length===1
+             ?gr.nodes[0].desc.slice(0,250)+'…'
+             :gr.nodes.map(n=>`▪ ${n.title}\n${n.desc.slice(0,80)}…`).join('\n\n');
+           p._curNode=gr.nodes[0];
+           p.classList.add('on');
+         });
+    });
+  }
+
+  // Zoom
+  const zoom=d3.zoom().scaleExtent([1,10]).on('zoom',ev=>g.attr('transform',ev.transform));
+  svg.call(zoom);
+  document.getElementById('wmzi').onclick=()=>svg.transition().duration(300).call(zoom.scaleBy,1.5);
+  document.getElementById('wmzo').onclick=()=>svg.transition().duration(300).call(zoom.scaleBy,.67);
+  document.getElementById('wmzr').onclick=()=>svg.transition().duration(400).call(zoom.transform,d3.zoomIdentity);
+
+  // Legend
+  const leg=document.getElementById('wmleg');
+  leg.innerHTML='<div style="font-size:8px;letter-spacing:2px;color:var(--accent);margin-bottom:8px">CATEGORIAS</div>';
+  Object.entries(CATS).forEach(([k,v])=>{leg.innerHTML+=`<div class="li"><div class="ld" style="background:${v.c}"></div>${v.l}</div>`;});
+
+  // Panel
+  document.getElementById('wmp-cls').onclick=()=>document.getElementById('wmpanel').classList.remove('on');
+  document.getElementById('wmp-more').onclick=function(){
+    const node=document.getElementById('wmpanel')._curNode;
+    if(node){document.querySelectorAll('.tab')[0].click();setTimeout(()=>openDP(node),150);}
+  };
+}
+</script>
+</body>
+</html>
